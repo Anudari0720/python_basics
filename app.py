@@ -3,55 +3,125 @@ import pandas as pd
 import numpy as np
 import pickle
 
-# Хуудасны тохиргоо
-st.set_page_config(page_title="EduPath AI - Карьер Зөвлөх", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="EduPath AI", page_icon="🎓", layout="wide")
 
-st.title("🎓 EduPath AI - Мэргэжил ба Их Сургууль Зөвлөх Систем")
-st.write("Таны сонирхол, ур чадварт үндэслэн хамгийн тохиромжтой мэргэжлийг таамаглана.")
+st.title("🎓 EduPath AI - Боловсрол & Карьер Зөвлөх Систем")
+st.write("Сурагчдын зан төлөв, давуу тал болон сонирхолд үндэслэн тохирох мэргэжил, их сургуулийг санал болгох AI систем.")
 
-# 1. Загвар болон Дата ачаалах хэсэг
+# 1. ML Загвар ба Дата ачаалах
 @st.cache_resource
-def load_model():
+def load_assets():
+    model = None
     try:
         with open('edupath_model.pkl', 'rb') as f:
             model = pickle.load(f)
-        return model
     except Exception as e:
-        st.error(f"Модель ачаалахад алдаа гарлаа: {e}")
-        return None
+        st.warning(f"Модель файл ачаалахад анхааруулга: {e}")
+    
+    df_uni = None
+    try:
+        df_uni = pd.read_csv('data.csv - Form responses 1.csv')
+    except:
+        try:
+            df_uni = pd.read_csv('data.csv')
+        except:
+            pass
+            
+    return model, df_uni
 
-model = load_model()
+model, df_uni = load_assets()
 
-# 2. Хэрэглэгчийн асуулга / Интерфэйс
-st.subheader("📋 Сурагчийн асуулга")
+# Session state тохируулах (Алхам алхмаар асуулт асуух)
+if 'step' not in st.session_state:
+    st.session_state.step = 1
+if 'answers' not in st.session_state:
+    st.session_state.answers = {}
 
-col1, col2 = st.columns(2)
-
-with col1:
-    grade = st.selectbox("Та хэддүгээр анги вэ?", ["10-р анги", "11-р анги", "12-р анги"])
-    interest_science = st.slider("Байгалийн ухаан, математикт сонирхолтой эсэх (1-5)", 1, 5, 3)
-    interest_tech = st.slider("Компьютер, мэдээллийн технологид сонирхолтой эсэх (1-5)", 1, 5, 3)
-
-with col2:
-    interest_art = st.slider("Урлаг, дизайн, бүтээлч байдалд сонирхолтой эсэх (1-5)", 1, 5, 3)
-    interest_social = st.slider("Нийгэм, хүмүүстэй харилцах чиглэлд сонирхолтой эсэх (1-5)", 1, 5, 3)
-
-# 3. Мэргэжил таамаглах товч
-if st.button("🚀 Мэргэжил таамаглах"):
-    if model is not None:
-        # Таамаглал хийх туршилтын логик
-        st.success("🎉 Сонголтод үндэслэн шинжилж байна...")
-        
-        # Энд таны ML загварын таамаглах хэсэг ажиллана
-        st.info("💡 Танд хамгийн тохиромжтой чиглэл: **Computer Science / Data Science**")
-    else:
-        st.warning("Модель файл хараахан ачаалагдаагүй байна. GitHub дээр edupath_model.pkl файл байгаа эсэхийг шалгаарай.")
-
-# Их сургуулиудын жагсаалт шүүж харах
 st.markdown("---")
-st.subheader("🏫 Их дээд сургуулиудын мэдээлэл")
-try:
-    df_unis = pd.read_csv('data.csv - Form responses 1.csv')
-    st.dataframe(df_unis.head())
-except:
-    st.write("Сургуулийн датаг ачаалж байна...")
+
+# --- 1-р алхам: Үндсэн асуулга ---
+if st.session_state.step == 1:
+    st.subheader("📝 Алхам 1/2: Сурагчийн зан төлөв ба суралцах арга барил")
+    
+    grade = st.selectbox("1. Одоо хэддүгээр анги вэ?", ["10-р анги", "11-р анги", "12-р анги"])
+    
+    q2 = st.radio(
+        "2. Хэцүү бодлого, учрыг нь олдоггүй асуудал гараад ирвэл чиний тархи хамгийн эхэнд яаж ажилладаг вэ?",
+        [
+            "Ном, интернетээс судалгаа хийж, шинжлэх ухааны үндэслэлтэй хариулт хайдаг",
+            "Хүний бие, анагаах ухаан, биологи, химийн лабораторийн туршилт талаас нь боддог",
+            "Компьютер, код бичих, математикийн хэцүү бодлого, дататай ажиллах талаас нь хардаг",
+            "Бусад хүмүүстэй ярилцаж, тэдний бодол санааг сонсож, сэтгэл зүйг нь ойлгохыг хичээдэг",
+            "Бусдад тайлбарлаж өгөх эсвэл илтгэл тавих, дизайн гаргах, шинэ санаа олох арга хайдаг"
+        ]
+    )
+    
+    q3 = st.radio(
+        "3. Ямар хичээл эсвэл зүйл дээр суухад цаг хугацаа хурдан өнгөрчихсөн байдаг вэ?",
+        [
+            "Компьютер, код бичих, код бичиж турших эсвэл логик тоглоом тоглох",
+            "Хуний бие, анагаах ухаан, биологи, химийн лабораторийн туршилт хийх",
+            "Ном, интернетээс судалгаа хийх, эссэ бичих, түүх, нийгмийн хичээл судалж унших",
+            "Зураг зурах, дизайн гаргах, бичлэг эвлүүлэх, уран бүтээл хийх",
+            "Спорт, сагсан бөмбөг, шатар тоглох, гадаад хэл үзэх"
+        ]
+    )
+
+    if st.button("Дараагийн алхам ➔"):
+        st.session_state.answers['grade'] = grade
+        st.session_state.answers['q2'] = q2
+        st.session_state.answers['q3'] = q3
+        st.session_state.step = 2
+        st.rerun()
+
+# --- 2-р алхам: Өөрөө өөрийгөө үнэлэх ---
+elif st.session_state.step == 2:
+    st.subheader("📊 Алхам 2/2: Зан чанар ба Үнэлгээ")
+    
+    q4 = st.slider("4. Хэцүү логик таавар эсвэл кодтой таарахад сонирхол чинь хэр их хөдөлдөг вэ? (1-5)", 1, 5, 3)
+    q5 = st.slider("5. Хийж байсан зүйл чинь олон дахин алдаа гарвал яадаг вэ? (1-5)", 1, 5, 3)
+    q6 = st.slider("6. Дэлгэц ширтсэний өдөрт ганцаараа 3-4 цаг тасралтгүй сууж ажиллах ямар санагддаг вэ? (1-5)", 1, 5, 4.0, step=0.5)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("⬅️ Буцах"):
+            st.session_state.step = 1
+            st.rerun()
+    with col2:
+        if st.button("🚀 Мэргэжил таамаглах"):
+            st.session_state.answers['q4'] = q4
+            st.session_state.answers['q5'] = q5
+            st.session_state.answers['q6'] = q6
+            st.session_state.step = 3
+            st.rerun()
+
+# --- 3-р алхам: Шинжилгээ ба Үр дүн ---
+elif st.session_state.step == 3:
+    st.subheader("🎯 Шинжилгээний Дүн ба Таамаглал")
+    
+    # Сонголтоос хамаарч мэргэжил тодорхойлох логик
+    q2_ans = st.session_state.answers.get('q2', '')
+    q3_ans = st.session_state.answers.get('q3', '')
+    
+    predicted_major = "Computer Science / AI Engineering"
+    if "анагаах" in q2_ans.lower() or "биологи" in q3_ans.lower():
+        predicted_major = "Biomedical Engineering / Brain & Cognitive Science"
+    elif "дизайн" in q2_ans.lower() or "зураг" in q3_ans.lower():
+        predicted_major = "Human-Computer Interaction (HCI) / UX-UI Design"
+    elif "нийгэм" in q2_ans.lower() or "сэтгэл зүй" in q2_ans.lower():
+        predicted_major = "Cognitive Science / Affective Computing"
+        
+    st.success(f"🎓 Таны хариултад үндэслэсэн тохиромжтой чиглэл: **{predicted_major}**")
+    
+    st.markdown("---")
+    st.subheader("🏫 Санал болгох Их Дээд Сургуулиуд ба Дата")
+    
+    if df_uni is not None:
+        st.dataframe(df_uni)
+    else:
+        st.info("Сурагчдын болон сургуулийн асуулгын дататай ажиллаж байна.")
+        
+    if st.button("🔄 Дахин асуулга өгөх"):
+        st.session_state.step = 1
+        st.session_state.answers = {}
+        st.rerun()

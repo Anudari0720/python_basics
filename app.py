@@ -1,210 +1,109 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import pickle
 
+# 1. Хуудасны тохиргоо
 st.set_page_config(page_title="EduPath AI", page_icon="🎓", layout="wide")
 
 st.title("🎓 EduPath AI - Боловсрол & Карьер Зөвлөх Систем")
-st.write("Сурагчдын зан төлөв, давуу тал болон сонирхолд үндэслэн тохирох мэргэжил, их сургуулийг санал болгох AI систем.")
+st.write("Таны сонирхол, зан төлөвт үндэслэн мэргэжил болон их сургууль санал болгох AI систем.")
 
-# 1. ML Загвар ба Дата ачаалах
+# 2. Загвар болон Сургуулийн дата ачаалах
 @st.cache_resource
-def load_assets():
-    model = None
+def load_model():
     try:
         with open('edupath_model.pkl', 'rb') as f:
-            model = pickle.load(f)
-    except Exception as e:
-        st.warning(f"Модель файл ачаалахад анхааруулга: {e}")
-    
-    df_uni = None
-    try:
-        df_uni = pd.read_csv('data.csv - Form responses 1.csv')
+            return pickle.load(f)
     except:
-        try:
-            df_uni = pd.read_csv('data.csv')
-        except:
-            pass
-            
-    return model, df_uni
+        return None
 
-model, df_uni = load_assets()
+@st.cache_data
+def load_universities():
+    try:
+        df = pd.read_csv('universities.csv')
+        return df
+    except:
+        return pd.DataFrame({
+            "Их сургууль": ["KAIST", "Seoul National University (SNU)", "Sungkyunkwan University (SKKU)", "МУИС", "ШУТИС"],
+            "Улс": ["Өмнөд Солонгос", "Өмнөд Солонгос", "Өмнөд Солонгос", "Монгол", "Монгол"],
+            "Сургалтын хөтөлбөр / Чиглэл": [
+                "Computer Science, Brain & Cognitive Science, AI",
+                "Computer Science, Engineering, Natural Sciences",
+                "Software, Artificial Intelligence, HCI",
+                "Мэдээллийн технологи, Компьютерийн ухаан, Биологи",
+                "Програмгамгамжийн инженерчлэл, Мэдээллийн систем"
+            ]
+        })
 
-# Session state тохируулах (Алхам алхмаар асуулт асуух)
-if 'step' not in st.session_state:
-    st.session_state.step = 1
-if 'answers' not in st.session_state:
-    st.session_state.answers = {}
+model = load_model()
+df_uni = load_universities()
 
-st.markdown("---")
+# 3. Таб тохируулах (Асуулга, Чатбот, Их сургуулиуд)
+tab1, tab2, tab3 = st.tabs(["📝 Мэргэжил тодорхойлох асуулга", "💬 AI Чатботтай ярилцах", "🏫 Их дээд сургуулиуд"])
 
-# --- 1-р алхам: Үндсэн асуулга ---
-if st.session_state.step == 1:
-    st.subheader("📝 Алхам 1/2: Сурагчийн зан төлөв ба суралцах арга барил")
+# --- TAB 1: АСУУЛГА ---
+with tab1:
+    st.subheader("📋 Сурагчийн сонирхол ба зан төлөвийн асуулга")
     
     grade = st.selectbox("1. Одоо хэддүгээр анги вэ?", ["10-р анги", "11-р анги", "12-р анги"])
     
     q2 = st.radio(
         "2. Хэцүү бодлого, учрыг нь олдоггүй асуудал гараад ирвэл чиний тархи хамгийн эхэнд яаж ажилладаг вэ?",
         [
-            "Ном, интернетээс судалгаа хийж, шинжлэх ухааны үндэслэлтэй хариулт хайдаг",
-            "Хүний бие, анагаах ухаан, биологи, химийн лабораторийн туршилт талаас нь боддог",
             "Компьютер, код бичих, математикийн хэцүү бодлого, дататай ажиллах талаас нь хардаг",
+            "Хүний бие, анагаах ухаан, биологи, химийн лабораторийн туршилт талаас нь боддог",
+            "Ном, интернетээс судалгаа хийж, шинжлэх ухааны үндэслэлтэй хариулт хайдаг",
             "Бусад хүмүүстэй ярилцаж, тэдний бодол санааг сонсож, сэтгэл зүйг нь ойлгохыг хичээдэг",
             "Бусдад тайлбарлаж өгөх эсвэл илтгэл тавих, дизайн гаргах, шинэ санаа олох арга хайдаг"
         ]
     )
     
-    q3 = st.radio(
-        "3. Ямар хичээл эсвэл зүйл дээр суухад цаг хугацаа хурдан өнгөрчихсөн байдаг вэ?",
-        [
-            "Компьютер, код бичих, код бичиж турших эсвэл логик тоглоом тоглох",
-            "Хуний бие, анагаах ухаан, биологи, химийн лабораторийн туршилт хийх",
-            "Ном, интернетээс судалгаа хийх, эссэ бичих, түүх, нийгмийн хичээл судалж унших",
-            "Зураг зурах, дизайн гаргах, бичлэг эвлүүлэх, уран бүтээл хийх",
-            "Спорт, сагсан бөмбөг, шатар тоглох, гадаад хэл үзэх"
+    q3 = st.slider("3. Хэцүү логик таавар эсвэл кодтой таарахад сонирхол чинь хэр их хөдөлдөг вэ? (1-5)", 1.0, 5.0, 3.0, step=0.5)
+    
+    if st.button("🚀 Мэргэжил таамаглах"):
+        st.markdown("---")
+        if "Компьютер" in q2:
+            st.success("🎓 Танд санал болгох чиглэл: **Computer Science / Artificial Intelligence**")
+        elif "Хүний бие" in q2:
+            st.success("🎓 Танд санал болгох чиглэл: **Biomedical Engineering / Brain & Cognitive Science**")
+        elif "Бусад хүмүүстэй" in q2:
+            st.success("🎓 Танд санал болгох чиглэл: **Cognitive Science / Affective Computing**")
+        else:
+            st.success("🎓 Танд санал болгох чиглэл: **Human-Computer Interaction (HCI) / Data Science**")
+
+# --- TAB 2: ЧАТБОТ ---
+with tab2:
+    st.subheader("💬 AI Зөвлөхтэй чатлах")
+    
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {"role": "assistant", "content": "Сайн байна уу! Би EduPath AI зөвлөх байна. Та өөрийн сонирхдог зүйл, хичээл эсвэл дуртай хоббигийнхоо талаар бичээрэй."}
         ]
-    )
 
-    if st.button("Дараагийн алхам ➔"):
-        st.session_state.answers['grade'] = grade
-        st.session_state.answers['q2'] = q2
-        st.session_state.answers['q3'] = q3
-        st.session_state.step = 2
-        st.rerun()
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-# --- 2-р алхам: Өөрөө өөрийгөө үнэлэх ---
-elif st.session_state.step == 2:
-    st.subheader("📊 Алхам 2/2: Зан чанар ба Үнэлгээ")
-    
-    q4 = st.slider("4. Хэцүү логик таавар эсвэл кодтой таарахад сонирхол чинь хэр их хөдөлдөг вэ? (1-5)", 1, 5, 3)
-    q5 = st.slider("5. Хийж байсан зүйл чинь олон дахин алдаа гарвал яадаг вэ? (1-5)", 1, 5, 3)
-    q6 = st.slider("6. Дэлгэц ширтсэний өдөрт ганцаараа 3-4 цаг тасралтгүй сууж ажиллах ямар санагддаг вэ? (1-5)", 1.0, 5.0, 4.0, step=0.5)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("⬅️ Буцах"):
-            st.session_state.step = 1
-            st.rerun()
-    with col2:
-        if st.button("🚀 Мэргэжил таамаглах"):
-            st.session_state.answers['q4'] = q4
-            st.session_state.answers['q5'] = q5
-            st.session_state.answers['q6'] = q6
-            st.session_state.step = 3
-            st.rerun()
+    if prompt := st.chat_input("Энд зурвасаа бичнэ үү (Жишээ нь: bi sags togloh durtai)..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
 
-# --- 3-р алхам: Шинжилгээ ба Үр дүн ---
-elif st.session_state.step == 3:
-    st.subheader("🎯 Шинжилгээний Дүн ба Таамаглал")
-    
-    # Сонголтоос хамаарч мэргэжил тодорхойлох логик
-    q2_ans = st.session_state.answers.get('q2', '')
-    q3_ans = st.session_state.answers.get('q3', '')
-    
-    predicted_major = "Computer Science / AI Engineering"
-    if "анагаах" in q2_ans.lower() or "биологи" in q3_ans.lower():
-        predicted_major = "Biomedical Engineering / Brain & Cognitive Science"
-    elif "дизайн" in q2_ans.lower() or "зураг" in q3_ans.lower():
-        predicted_major = "Human-Computer Interaction (HCI) / UX-UI Design"
-    elif "нийгэм" in q2_ans.lower() or "сэтгэл зүй" in q2_ans.lower():
-        predicted_major = "Cognitive Science / Affective Computing"
-        
-    st.success(f"🎓 Таны хариултад үндэслэсэн тохиромжтой чиглэл: **{predicted_major}**")
-    
-    st.markdown("---")
-    st.subheader("🏫 Санал болгох Их Дээд Сургуулиуд ба Дата")
-    
-    if df_uni is not None:
-        st.dataframe(df_uni)
-    else:
-        st.info("Сурагчдын болон сургуулийн асуулгын дататай ажиллаж байна.")
-        
-    if st.button("🔄 Дахин асуулга өгөх"):
-        st.session_state.step = 1
-        st.session_state.answers = {}
-        st.rerun()
- import streamlit as st
-import pandas as pd
-import numpy as np
-import pickle
+        p_lower = prompt.lower()
+        if any(w in p_lower for w in ["сагс", "sags", "спорт", "sport"]):
+            response = "Спорт болон багийн ажиллагаанд сонирхолтой бол **Спортын аналитик, Кинезиологи (Хүний хөдөлгөөн судлал)** эсвэл **Спортын менежмент** чиглэлүүд маш тохиромжтой."
+        elif any(w in p_lower for w in ["код", "компьютер", "ai", "магадлал", "it"]):
+            response = "Технологид сонирхолтой бол **Computer Science, Software Engineering, AI** болон **Affective Computing** чиглэлүүд яг тохирно."
+        elif any(w in p_lower for w in ["эмч", "анагаах", "биологи"]):
+            response = "Байгалийн ухаанд сонирхолтой бол **Biomedical Engineering, Brain and Cognitive Science** эсвэл **Анагаах ухаан** чиглэлийг санал болгож байна."
+        else:
+            response = f"Таны бичсэн '{prompt}' гэсэн асуултыг шинжиж байна. Та дуртай хичээл эсвэл сурахыг хүсэж буй чиглэлээ арай тодорхой бичвэл би нарийн зөвлөгөө өгч чадна."
 
-st.set_page_config(page_title="EduPath AI Chatbot", page_icon="🎓", layout="centered")
+        with st.chat_message("assistant"):
+            st.markdown(response)
+        st.session_state.messages.append({"role": "assistant", "content": response})
 
-st.title("🎓 EduPath AI - Ухаалаг Зөвлөх")
-st.write("Сайн байна уу? Өөрийн сонирхол, давуу тал болон асуух зүйлээ бичээрэй.")
-
-# 1. Загвар ба Дата ачаалах
-@st.cache_resource
-def load_assets():
-    model = None
-    try:
-        with open('edupath_model.pkl', 'rb') as f:
-            model = pickle.load(f)
-    except Exception as e:
-        pass
-    
-    df_uni = None
-    try:
-        df_uni = pd.read_csv('data.csv - Form responses 1.csv')
-    except:
-        try:
-            df_uni = pd.read_csv('data.csv')
-        except:
-            pass
-    return model, df_uni
-
-model, df_uni = load_assets()
-
-# 2. Мессежийн түүх
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "assistant", "content": "Сайн байна уу! Би таны сонирхолд тохирох мэргэжил болон их сургуулийг санал болгоход бэлэн байна. Та юу сонирхдог вэ?"}
-    ]
-
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# 3. Ухаалаг хариулт боловсруулах логик
-def generate_smart_response(text):
-    text_lower = text.lower()
-    
-    # Сагс, спорт гэх мэт сонирхолтой бол
-    if any(word in text_lower for word in ["сагс", "sags", "спорт", "sport", "тоглох"]):
-        return "Спорт болон багийн ажиллагаанд сонирхолтой бол **Спортын менежмент, Физиотерапи, Хүний биеийн кинезиологи** эсвэл **Data Analytics in Sports** (Спортын дата аналитик) чиглэлүүд маш тохиромжтой."
-    
-    # Код, компьютер, AI
-    elif any(word in text_lower for word in ["код", "програм", "код бичих", "IT", "компьютер", "ai", "магадлал"]):
-        return "Код болон технологид сонирхолтой бол **Computer Science, Software Engineering, Artificial Intelligence** болон **Affective Computing** чиглэлүүдийг санал болгож байна."
-    
-    # Анагаах, биологи
-    elif any(word in text_lower for word in ["эмч", "анагаах", "биологи", "хими", "эм"]):
-        return "Байгалийн ухаан болон хүнд туслах сонирхолтой бол **Байомедикал инженерчлэл (Biomedical Engineering), Тархи ба танин мэдэхүйн судлал (Brain and Cognitive Science)** эсвэл **Хүний их эмч** чиглэл тохирно."
-    
-    # Мэргэжлийн ерөнхий асуулт
-    elif any(word in text_lower for word in ["мэргэжил", "ямар", "дээр вэ", "сонгох"]):
-        return "Танд ямар хичээл хамгийн сонирхолтой байдаг вэ? (Жишээ нь: Математик, Англи хэл, Зураг төсөл, Спорт г.м) Надад хэлвэл би тодорхой чиглэлүүдийг санал болгож чадна."
-
-    # Сургууль асуусан бол
-    elif any(word in text_lower for word in ["сургууль", "ih surguuli", "university", "каист", "kaist"]):
-        return "Манай системд бүртгэлтэй сургуулиудын жагсаалт байна. Мөн олон улсын KAIST, SNU, SKKU зэрэг топ сургуулиудын хөтөлбөрт бэлдэх боломжтой."
-    
-    # Бусад ерөнхий хариулт
-    else:
-        return f"Таны хэлсэн '{text}' гэсэн сонирхолд тохируулан дүн шинжилгээ хийж байна. Та давуу тал болон сурахыг хүсэж буй чиглэлээ илүү тодорхой бичиж өгвөл нарийн зөвлөгөө өгөхөд тусална."
-
-# 4. Chat Input
-if prompt := st.chat_input("Энд зурвасаа бичнэ үү..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    # Ухаалаг хариултыг дуудах
-    response = generate_smart_response(prompt)
-
-    with st.chat_message("assistant"):
-        st.markdown(response)
-    
-    st.session_state.messages.append({"role": "assistant", "content": response})
+# --- TAB 3: ИХ СУРГУУЛИУД ---
+with tab3:
+    st.subheader("🏫 Санал болгох Их Дээд Сургуулиудын Жинхэнэ Дата")
+    st.dataframe(df_uni, use_container_width=True)

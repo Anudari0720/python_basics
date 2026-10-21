@@ -125,23 +125,24 @@ elif st.session_state.step == 3:
         st.session_state.step = 1
         st.session_state.answers = {}
         st.rerun()
-    import streamlit as st
+ import streamlit as st
 import pandas as pd
+import numpy as np
 import pickle
 
 st.set_page_config(page_title="EduPath AI Chatbot", page_icon="🎓", layout="centered")
 
-st.title("🎓 EduPath AI - Карьер & Сургууль Зөвлөх Чатбот")
-st.write("Сайн байна уу? Би таны боловсрол болон карьер сонголтод туслах AI чатбот байна.")
+st.title("🎓 EduPath AI - Ухаалаг Зөвлөх")
+st.write("Сайн байна уу? Өөрийн сонирхол, давуу тал болон асуух зүйлээ бичээрэй.")
 
-# Загвар болон дата ачаалах
+# 1. Загвар ба Дата ачаалах
 @st.cache_resource
 def load_assets():
     model = None
     try:
         with open('edupath_model.pkl', 'rb') as f:
             model = pickle.load(f)
-    except:
+    except Exception as e:
         pass
     
     df_uni = None
@@ -156,31 +157,52 @@ def load_assets():
 
 model, df_uni = load_assets()
 
-# Чат болон мессежийн түүх хадгалах state
+# 2. Мессежийн түүх
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "Сайн байна уу! Та ямар мэргэжил сонирхож байна вэ? Эсвэл өөрийнхөө сонирхлын талаар хэлээрэй."}
+        {"role": "assistant", "content": "Сайн байна уу! Би таны сонирхолд тохирох мэргэжил болон их сургуулийг санал болгоход бэлэн байна. Та юу сонирхдог вэ?"}
     ]
 
-# Өмнөх мессежүүдийг дэлгэцэнд харуулах
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Хэрэглэгч чат руу юм бичих хэсэг (Chat Input)
-if prompt := st.chat_input("Энд зурвасаа бичнэ үү (Жишээ нь: Computer Science ямар вэ?)..."):
-    # Хэрэглэгчийн бичсэнийг чатад нэмэх
+# 3. Ухаалаг хариулт боловсруулах логик
+def generate_smart_response(text):
+    text_lower = text.lower()
+    
+    # Сагс, спорт гэх мэт сонирхолтой бол
+    if any(word in text_lower for word in ["сагс", "sags", "спорт", "sport", "тоглох"]):
+        return "Спорт болон багийн ажиллагаанд сонирхолтой бол **Спортын менежмент, Физиотерапи, Хүний биеийн кинезиологи** эсвэл **Data Analytics in Sports** (Спортын дата аналитик) чиглэлүүд маш тохиромжтой."
+    
+    # Код, компьютер, AI
+    elif any(word in text_lower for word in ["код", "програм", "код бичих", "IT", "компьютер", "ai", "магадлал"]):
+        return "Код болон технологид сонирхолтой бол **Computer Science, Software Engineering, Artificial Intelligence** болон **Affective Computing** чиглэлүүдийг санал болгож байна."
+    
+    # Анагаах, биологи
+    elif any(word in text_lower for word in ["эмч", "анагаах", "биологи", "хими", "эм"]):
+        return "Байгалийн ухаан болон хүнд туслах сонирхолтой бол **Байомедикал инженерчлэл (Biomedical Engineering), Тархи ба танин мэдэхүйн судлал (Brain and Cognitive Science)** эсвэл **Хүний их эмч** чиглэл тохирно."
+    
+    # Мэргэжлийн ерөнхий асуулт
+    elif any(word in text_lower for word in ["мэргэжил", "ямар", "дээр вэ", "сонгох"]):
+        return "Танд ямар хичээл хамгийн сонирхолтой байдаг вэ? (Жишээ нь: Математик, Англи хэл, Зураг төсөл, Спорт г.м) Надад хэлвэл би тодорхой чиглэлүүдийг санал болгож чадна."
+
+    # Сургууль асуусан бол
+    elif any(word in text_lower for word in ["сургууль", "ih surguuli", "university", "каист", "kaist"]):
+        return "Манай системд бүртгэлтэй сургуулиудын жагсаалт байна. Мөн олон улсын KAIST, SNU, SKKU зэрэг топ сургуулиудын хөтөлбөрт бэлдэх боломжтой."
+    
+    # Бусад ерөнхий хариулт
+    else:
+        return f"Таны хэлсэн '{text}' гэсэн сонирхолд тохируулан дүн шинжилгээ хийж байна. Та давуу тал болон сурахыг хүсэж буй чиглэлээ илүү тодорхой бичиж өгвөл нарийн зөвлөгөө өгөхөд тусална."
+
+# 4. Chat Input
+if prompt := st.chat_input("Энд зурвасаа бичнэ үү..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Чатботын хариу өгөх хэсэг
-    response = f"Таны асуусан '{prompt}' гэсэн сэдвээр судлаад үзэхэд Computer Science, Artificial Intelligence болон Affective Computing чиглэлүүд маш тохиромжтой харагдаж байна! Мөн манай датабааз дээр холбогдох их сургуулиуд бүртгэгдсэн байгаа."
-    
-    if "сургууль" in prompt.lower() or "universities" in prompt.lower():
-        response = "Манай систем дэх их сургуулиудын жагсаалтыг доорх дата хүснэгтээс хараарай!"
-        if df_uni is not None:
-            st.dataframe(df_uni.head())
+    # Ухаалаг хариултыг дуудах
+    response = generate_smart_response(prompt)
 
     with st.chat_message("assistant"):
         st.markdown(response)

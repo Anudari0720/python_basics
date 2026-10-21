@@ -20,19 +20,16 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, classification_report
 
-# 1. Файлаа зөв нэрээр нь унших
 file_name = 'data.csv - Form responses 1.csv'
 df_students = pd.read_csv(file_name)
 
 print("1. Дата амжилттай уншигдлаа! Анхны мөрийн тоо:", len(df_students))
 
-# Илүүц Timestamp болон хоосон мөрүүдийг цэвэрлэх
 if 'Timestamp' in df_students.columns:
     df_students = df_students.drop(columns=['Timestamp'])
 
 df_students = df_students.dropna()
 
-# 2. Текстэн багануудыг ML модельд зориулж ТООРУУ хөрвүүлэх (Label Encoding)
 le_dict = {}
 df_encoded = df_students.copy()
 
@@ -42,20 +39,16 @@ for col in df_encoded.columns:
         df_encoded[col] = le.fit_transform(df_encoded[col].astype(str))
         le_dict[col] = le
 
-# 3. Оролт (X - Асуултууд) ба Гаралт (y - Хамгийн сүүлийн багана буюу Мэргэжил/Сонголт)-ийг салгах
 X = df_encoded.iloc[:, :-1]  # Сүүлчийн баганаас бусад бүх асуултууд
 y = df_encoded.iloc[:, -1]   # Хамгийн сүүлийн багана
 
 print(f"2. Өгөгдөл бэлэн боллоо. X хэмжээ: {X.shape}, y хэмжээ: {y.shape}")
 
-# 4. Train / Test хуваах (80% сургах, 20% шалгах)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# 5. Random Forest Загвар сургах
 model = RandomForestClassifier(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
-# 6. Accuracy (Нарийвчлал) Тооцоолох
 y_pred = model.predict(X_test)
 acc = accuracy_score(y_test, y_pred)
 
@@ -63,12 +56,10 @@ print("="*45)
 print(f"🎯 Машин сургалтын загварын Accuracy: {acc * 100:.2f}%")
 print("="*45)
 
-# 7. Сургасан загвараа хадгалах
 with open('edupath_model.pkl', 'wb') as f:
     pickle.dump(model, f)
 
 print("\n✅ Загвар амжилттай 'edupath_model.pkl' файлд хадгалагдлаа!")
-%%writefile app.py
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -76,7 +67,6 @@ import pickle
 import plotly.graph_objects as go
 import time
 
-# --- ВЕБИЙН ТОХИРГОО ---
 st.set_page_config(
     page_title="EduPath & MindCheck AI",
     page_icon="🎓",
@@ -84,7 +74,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- ML МОДЕЛ БА ИХ СУРГУУЛИЙН ДАТА АЧААЛАХ ---
 @st.cache_resource
 def load_ml_model():
     try:
@@ -118,7 +107,6 @@ if 'chat_history' not in st.session_state:
         {"role": "assistant", "content": "Сайн байна уу! Би таны AI Карьер & Сэтгэл зүйн зөвлөх байна. Асуух зүйл байвал бичээрэй! 😊"}
     ]
 
-# --- SIDEBAR ---
 st.sidebar.title("🎓 EduPath AI")
 st.sidebar.markdown("---")
 page = st.sidebar.radio("Үндсэн цэс", [
@@ -128,7 +116,6 @@ page = st.sidebar.radio("Үндсэн цэс", [
     "📊 Загварын Үр Дүн (Accuracy)"
 ])
 
-# 1. ML СОРИЛ БА ЗАМЫН ЗУРАГЛАЛ
 if page == "🧭 ML Сорил & Замын Зураглал":
     st.title("🎓 ML Загварт суурилсан Мэргэжил Сонголт")
     progress = (st.session_state.step - 1) / 3
@@ -219,7 +206,6 @@ if page == "🧭 ML Сорил & Замын Зураглал":
             st.session_state.step = 1
             st.rerun()
 
-# 2. CHATBOT
 elif page == "💬 AI Зөвлөхтэй Чатлах (ChatGPT)":
     st.title("💬 EduPath AI - Ухаалаг Чатбот")
     for msg in st.session_state.chat_history:
@@ -243,7 +229,6 @@ elif page == "💬 AI Зөвлөхтэй Чатлах (ChatGPT)":
 
         st.session_state.chat_history.append({"role": "assistant", "content": full_response})
 
-# 3. СУРГУУЛИУД
 elif page == "🏫 Сургууль & Босго Оноо":
     st.title("🏫 Сургуулиудын Дата мэдээлэл")
     st.dataframe(df_unis, use_container_width=True)

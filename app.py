@@ -125,3 +125,64 @@ elif st.session_state.step == 3:
         st.session_state.step = 1
         st.session_state.answers = {}
         st.rerun()
+    import streamlit as st
+import pandas as pd
+import pickle
+
+st.set_page_config(page_title="EduPath AI Chatbot", page_icon="🎓", layout="centered")
+
+st.title("🎓 EduPath AI - Карьер & Сургууль Зөвлөх Чатбот")
+st.write("Сайн байна уу? Би таны боловсрол болон карьер сонголтод туслах AI чатбот байна.")
+
+# Загвар болон дата ачаалах
+@st.cache_resource
+def load_assets():
+    model = None
+    try:
+        with open('edupath_model.pkl', 'rb') as f:
+            model = pickle.load(f)
+    except:
+        pass
+    
+    df_uni = None
+    try:
+        df_uni = pd.read_csv('data.csv - Form responses 1.csv')
+    except:
+        try:
+            df_uni = pd.read_csv('data.csv')
+        except:
+            pass
+    return model, df_uni
+
+model, df_uni = load_assets()
+
+# Чат болон мессежийн түүх хадгалах state
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "assistant", "content": "Сайн байна уу! Та ямар мэргэжил сонирхож байна вэ? Эсвэл өөрийнхөө сонирхлын талаар хэлээрэй."}
+    ]
+
+# Өмнөх мессежүүдийг дэлгэцэнд харуулах
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# Хэрэглэгч чат руу юм бичих хэсэг (Chat Input)
+if prompt := st.chat_input("Энд зурвасаа бичнэ үү (Жишээ нь: Computer Science ямар вэ?)..."):
+    # Хэрэглэгчийн бичсэнийг чатад нэмэх
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    # Чатботын хариу өгөх хэсэг
+    response = f"Таны асуусан '{prompt}' гэсэн сэдвээр судлаад үзэхэд Computer Science, Artificial Intelligence болон Affective Computing чиглэлүүд маш тохиромжтой харагдаж байна! Мөн манай датабааз дээр холбогдох их сургуулиуд бүртгэгдсэн байгаа."
+    
+    if "сургууль" in prompt.lower() or "universities" in prompt.lower():
+        response = "Манай систем дэх их сургуулиудын жагсаалтыг доорх дата хүснэгтээс хараарай!"
+        if df_uni is not None:
+            st.dataframe(df_uni.head())
+
+    with st.chat_message("assistant"):
+        st.markdown(response)
+    
+    st.session_state.messages.append({"role": "assistant", "content": response})

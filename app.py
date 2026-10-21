@@ -1242,13 +1242,43 @@
           ]
         }
       ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "%%writefile app.py\n",
+        "import streamlit as st\n",
+        "\n",
+        "st.set_page_config(page_title=\"EduPath AI\", page_icon=\"🎓\", layout=\"wide\")\n",
+        "\n",
+        "st.title(\"🎓 EduPath AI - Карьер Зөвлөх систем\")\n",
+        "st.success(\"Сайн байна уу? Систем амжилттай ажиллаж эхэллээ!\")\n",
+        "st.write(\"Таны карьер болон мэргэжил сонголтод туслах платформ.\")"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "sLO0c-f-jkz1",
+        "outputId": "d4f70cc7-877a-4c40-eca5-b500a952e20e"
+      },
+      "execution_count": 4,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Overwriting app.py\n"
+          ]
+        }
+      ]
     }
   ],
   "metadata": {
     "colab": {
       "provenance": [],
       "toc_visible": true,
-      "authorship_tag": "ABX9TyPzwB2b7XZktxU0/2S3WPZg",
+      "authorship_tag": "ABX9TyMQNSTMJfzUbTKDNT0mZVqB",
       "include_colab_link": true
     },
     "kernelspec": {

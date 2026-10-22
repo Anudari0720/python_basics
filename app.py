@@ -3,14 +3,25 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 import streamlit as st
 
+# ==========================================
+# 1. STREAMLIT CONFIG & UI
+# ==========================================
 st.set_page_config(
     page_title="EduPath AI - Student Career Guidance",
     page_icon="🎓",
     layout="wide",
 )
 
-st.title("🎓 EduPath AI: Сурагчийн Зөвлөх Платформ")
+st.title("🎓 EduPath AI: Machine Learning Сурагчийн Зөвлөх Платформ")
+st.caption(
+    "Girls & Boys CODE 2026 - Data Science, Python & Machine Learning Capstone"
+    " Project"
+)
 
+
+# ==========================================
+# 2. DATA LOADING & ML MODEL TRAINING
+# ==========================================
 @st.cache_data
 def load_data_and_train_ml():
   try:
@@ -78,13 +89,20 @@ if "checklist" not in st.session_state:
       "7-8 цаг тогтмол унтаж амрах": False,
   }
 
+# ==========================================
+# 3. STREAMLIT TABS
+# ==========================================
 tab1, tab2, tab3, tab4 = st.tabs([
     "📊 1. Стресс Үнэлгээ",
     "🎯 2. Зорилго ба Төлөвлөгөө",
-    "🤖 3. Мэргэжил Таамаглагч & Сургууль Хайгч",
+    "🤖 3. ML Мэргэжил Таамаглагч & Сургууль Хайгч",
     "💬 4. AI Чатбот",
 ])
 
+
+# ------------------------------------------
+# TAB 1: STRESS DIAGNOSTIC
+# ------------------------------------------
 with tab1:
   st.header("📊 Сэтгэл Зүй ба Стрессийн Оношлогоо")
   col1, col2 = st.columns(2)
@@ -108,13 +126,17 @@ with tab1:
       st.session_state.stress_score = "Хэвийн / Бага Стресс 🟢"
       st.success("Таны бие ба сэтгэл зүй тэнцвэртэй байна!")
 
+
+# ------------------------------------------
+# TAB 2: GOAL & ROADMAP
+# ------------------------------------------
 with tab2:
   st.header("🎯 Зорилго ба 4 Долоо Хоногийн Стратеги")
   goal = st.selectbox(
       "Үндсэн зорилгоо сонгоно уу:",
       [
-          "SAT оноогоо ахиулах",
-          "IELTS оноогоо ахиулах",
+          "Python & ML Capstone төсөл дуусгах",
+          "IELTS / SAT оноогоо ахиулах",
           "ЭЕШ болон Их сургуулийн бэлтгэл хийх",
       ],
   )
@@ -135,9 +157,18 @@ with tab2:
     if val:
       completed += 1
   st.progress(completed / len(st.session_state.checklist))
+
+
+# ------------------------------------------
+# TAB 3: MACHINE LEARNING CLASSIFIER & EYSH SEARCH
+# ------------------------------------------
 with tab3:
-  st.header(" Санал Болгох Систем")
-  
+  st.header("🤖 Machine Learning (ML) Санал Болгох Систем")
+  st.markdown(
+      "Girls Code 2026 хөтөлбөрт үзсэн **ML Classification (Random Forest)**"
+      " алгоритм ашиглан танд тохирох салбарыг таамаглана."
+  )
+
   if ml_model is not None and not df_survey.empty:
     cols_s = df_survey.columns
     st.subheader("📝 Сурагчийн профайл оруулах:")
@@ -161,31 +192,35 @@ with tab3:
           df_survey[cols_s[13]].dropna().unique(),
       )
 
-   if st.button("🤖 ML Загвараар Таамаглах", type="primary"):
-    try:
-        # Encode user input safely
-        encoder_q1 = encoders[cols_s[2]]
-        if q1 in encoder_q1.classes_:
-            v1 = encoder_q1.transform([q1])[0]
-        else:
-            # Хэрэв датанд байхгүй шинэ утга байвал анхдагч утга авах эсвэл алдаа гаргахгүй байх
-            v1 = 0 
-            
-        # Бусад хувьсагчдыг мөн адил шалгаж хөрвүүлнэ
-        # Жишээ нь:
-        encoder_q2 = encoders[cols_s[3]]
-        v2 = encoder_q2.transform([q2])[0] if q2 in encoder_q2.classes_ else 0
-        
-        encoder_q6 = encoders[cols_s[13]]
-        v6 = encoder_q6.transform([q6])[0] if q6 in encoder_q6.classes_ else 0
+    if st.button("🤖 ML Загвараар Таамаглах", type="primary"):
+      try:
+        # Encode user input
+        v1 = (
+            encoders[cols_s[2]].transform([q1])[0]
+            if q1 in encoders[cols_s[2]].classes_
+            else 0
+        )
+        v2 = (
+            encoders[cols_s[3]].transform([q2])[0]
+            if q2 in encoders[cols_s[3]].classes_
+            else 0
+        )
+        v6 = (
+            encoders[cols_s[13]].transform([q6])[0]
+            if q6 in encoders[cols_s[13]].classes_
+            else 0
+        )
 
-        # Энд модель руугаа өгөгдлөө дамжуулж predict хийх кодоо бичнэ
-        # features = [[v1, v2, q3, q4, q5, v6]]
-        # prediction = ml_model.predict(features)
-        # st.success(f"Таамаглал: {prediction}")
+        input_data = [[v1, v2, q3, q4, q5, v6]]
+        prediction = ml_model.predict(input_data)[0]
+        predicted_label = target_encoder.inverse_transform([prediction])[0]
 
-    except Exception as e:
-        st.error(f"Таамаглахад алдаа гарлаа: {e}")
+        st.success(
+            f"🎉 **ML Загварын Таамаглал:** Танд хамгийн тохиромжтой салбар бол"
+            f" **{predicted_label}** юм!"
+        )
+      except Exception as err:
+        st.error(f"Таамаглахад алдаа гарлаа: {err}")
 
   st.markdown("---")
   st.subheader("🔍 ЭЕШ-ын Датанаас Сургууль Хайх (Eysh Predictor Data)")
@@ -216,6 +251,11 @@ with tab3:
           ]].head(10),
           use_container_width=True,
       )
+
+
+# ------------------------------------------
+# TAB 4: CHATBOT
+# ------------------------------------------
 with tab4:
   st.header("💬 AI Сэтгэл Зүйч & Зөвлөх Чатбот")
   user_msg = st.text_input("Таны асуулт:")
@@ -237,7 +277,7 @@ with tab4:
         )
       elif "эеш" in msg_lower or "сургууль" in msg_lower:
         st.write(
-            "**EduPath AI:** '3.  Мэргэжил Таамаглагч' таб руу орж сургуулийн"
+            "**EduPath AI:** '3. ML Мэргэжил Таамаглагч' таб руу орж сургуулийн"
             " босго оноогоо хараарай[cite: 3, 4]."
         )
       else:

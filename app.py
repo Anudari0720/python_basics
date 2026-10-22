@@ -4,7 +4,7 @@ from sklearn.preprocessing import LabelEncoder
 import streamlit as st
 
 # ==========================================
-# 1. STREAMLIT CONFIG & UI
+# 1. STREAMLIT CONFIG & UI SETUP
 # ==========================================
 st.set_page_config(
     page_title="EduPath AI - Student Career Guidance",
@@ -20,7 +20,7 @@ st.caption(
 
 
 # ==========================================
-# 2. DATA LOADING & ML MODEL TRAINING
+# 2. DATA LOADING & ML MODEL TRAINING (Зассан хувилбар)
 # ==========================================
 @st.cache_data
 def load_data_and_train_ml():
@@ -41,31 +41,32 @@ def load_data_and_train_ml():
   model = None
   encoders = {}
   target_encoder = None
+  feature_indices = [2, 3, 4, 8, 9, 13]  # Асуулгын баганын индексийн дугаарууд
+  target_idx = 14  # Сонирхож буй салбарын индекс
 
-  # --- Machine Learning Classification Model ---
   if not df_survey.empty:
     try:
-      cols = df_survey.columns
-      # Key Feature Columns from Survey
-      feature_cols = [cols[2], cols[3], cols[4], cols[8], cols[9], cols[13]]
-      target_col = cols[14]  # Ирээдүйд сонирхож буй салбар
+      cols = df_survey.columns.tolist()
+      df_ml = df_survey.dropna().copy()
 
-      df_ml = df_survey[feature_cols + [target_col]].dropna().copy()
-
-      X = df_ml[feature_cols].copy()
-      y = df_ml[target_col].copy()
-
-      # Encoding categorical variables
-      for col in feature_cols:
-        if X[col].dtype == "object":
+      X = pd.DataFrame()
+      for idx in feature_indices:
+        col_name = cols[idx]
+        if df_ml[col_name].dtype == "object":
           le = LabelEncoder()
-          X[col] = le.fit_transform(X[col].astype(str))
-          encoders[col] = le
+          le.fit(df_survey[col_name].dropna().astype(str))
+          X[f"f_{idx}"] = le.transform(df_ml[col_name].astype(str))
+          encoders[idx] = le
+        else:
+          X[f"f_{idx}"] = df_ml[col_name].values
 
+      target_col = cols[target_idx]
       target_encoder = LabelEncoder()
-      y_encoded = target_encoder.fit_transform(y.astype(str))
+      y_encoded = target_encoder.fit_transform(
+          df_ml[target_col].astype(str)
+      )
 
-      # Train ML Random Forest Classifier Model
+      # Random Forest Classifier сургах
       model = RandomForestClassifier(n_estimators=100, random_state=42)
       model.fit(X, y_encoded)
     except Exception as e:
@@ -89,8 +90,9 @@ if "checklist" not in st.session_state:
       "7-8 цаг тогтмол унтаж амрах": False,
   }
 
+
 # ==========================================
-# 3. STREAMLIT TABS
+# 3. STREAMLIT TABS БҮТЭЦ
 # ==========================================
 tab1, tab2, tab3, tab4 = st.tabs([
     "📊 1. Стресс Үнэлгээ",
@@ -194,20 +196,19 @@ with tab3:
 
     if st.button("🤖 ML Загвараар Таамаглах", type="primary"):
       try:
-        # Encode user input
         v1 = (
-            encoders[cols_s[2]].transform([q1])[0]
-            if q1 in encoders[cols_s[2]].classes_
+            encoders[2].transform([q1])[0]
+            if q1 in encoders[2].classes_
             else 0
         )
         v2 = (
-            encoders[cols_s[3]].transform([q2])[0]
-            if q2 in encoders[cols_s[3]].classes_
+            encoders[3].transform([q2])[0]
+            if q2 in encoders[3].classes_
             else 0
         )
         v6 = (
-            encoders[cols_s[13]].transform([q6])[0]
-            if q6 in encoders[cols_s[13]].classes_
+            encoders[13].transform([q6])[0]
+            if q6 in encoders[13].classes_
             else 0
         )
 
@@ -273,12 +274,12 @@ with tab4:
       elif "python" in msg_lower or "код" in msg_lower or "ml" in msg_lower:
         st.write(
             "**EduPath AI:** Python болон Machine Learning-ийг өдөр бүр бага"
-            " багаар дадлага хийж сураарай[cite: 3, 4]!"
+            " багаар дадлага хийж сураарай!"
         )
       elif "эеш" in msg_lower or "сургууль" in msg_lower:
         st.write(
             "**EduPath AI:** '3. ML Мэргэжил Таамаглагч' таб руу орж сургуулийн"
-            " босго оноогоо хараарай[cite: 3, 4]."
+            " босго оноогоо хараарай."
         )
       else:
         st.write(

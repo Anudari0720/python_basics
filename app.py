@@ -161,35 +161,31 @@ with tab3:
           df_survey[cols_s[13]].dropna().unique(),
       )
 
-    if st.button("🤖 ML Загвараар Таамаглах", type="primary"):
-      try:
-        # Encode user input
-        v1 = (
-            encoders[cols_s[2]].transform([q1])[0]
-            if q1 in encoders[cols_s[2]].classes_
-            else 0
-        )
-        v2 = (
-            encoders[cols_s[3]].transform([q2])[0]
-            if q2 in encoders[cols_s[3]].classes_
-            else 0
-        )
-        v6 = (
-            encoders[cols_s[13]].transform([q6])[0]
-            if q6 in encoders[cols_s[13]].classes_
-            else 0
-        )
+   if st.button("🤖 ML Загвараар Таамаглах", type="primary"):
+    try:
+        # Encode user input safely
+        encoder_q1 = encoders[cols_s[2]]
+        if q1 in encoder_q1.classes_:
+            v1 = encoder_q1.transform([q1])[0]
+        else:
+            # Хэрэв датанд байхгүй шинэ утга байвал анхдагч утга авах эсвэл алдаа гаргахгүй байх
+            v1 = 0 
+            
+        # Бусад хувьсагчдыг мөн адил шалгаж хөрвүүлнэ
+        # Жишээ нь:
+        encoder_q2 = encoders[cols_s[3]]
+        v2 = encoder_q2.transform([q2])[0] if q2 in encoder_q2.classes_ else 0
+        
+        encoder_q6 = encoders[cols_s[13]]
+        v6 = encoder_q6.transform([q6])[0] if q6 in encoder_q6.classes_ else 0
 
-        input_data = [[v1, v2, q3, q4, q5, v6]]
-        prediction = ml_model.predict(input_data)[0]
-        predicted_label = target_encoder.inverse_transform([prediction])[0]
+        # Энд модель руугаа өгөгдлөө дамжуулж predict хийх кодоо бичнэ
+        # features = [[v1, v2, q3, q4, q5, v6]]
+        # prediction = ml_model.predict(features)
+        # st.success(f"Таамаглал: {prediction}")
 
-        st.success(
-            f"🎉 **ML Загварын Таамаглал:** Танд хамгийн тохиромжтой салбар бол"
-            f" **{predicted_label}** юм!"
-        )
-      except Exception as err:
-        st.error(f"Таамаглахад алдаа гарлаа: {err}")
+    except Exception as e:
+        st.error(f"Таамаглахад алдаа гарлаа: {e}")
 
   st.markdown("---")
   st.subheader("🔍 ЭЕШ-ын Датанаас Сургууль Хайх (Eysh Predictor Data)")

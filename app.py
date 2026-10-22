@@ -194,18 +194,10 @@ with tab3:
           df_survey[cols_s[13]].dropna().unique(),
       )
 
-    if st.button("🤖 ML Загвараар Таамаглах", type="primary"):
+  if st.button("🤖 ML Загвараар Таамаглах", type="primary"):
       try:
-        v1 = (
-            encoders[2].transform([q1])[0]
-            if q1 in encoders[2].classes_
-            else 0
-        )
-        v2 = (
-            encoders[3].transform([q2])[0]
-            if q2 in encoders[3].classes_
-            else 0
-        )
+        v1 = encoders[2].transform([q1])[0] if q1 in encoders[2].classes_ else 0
+        v2 = encoders[3].transform([q2])[0] if q2 in encoders[3].classes_ else 0
         v6 = (
             encoders[13].transform([q6])[0]
             if q6 in encoders[13].classes_

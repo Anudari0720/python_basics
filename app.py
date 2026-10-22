@@ -9,11 +9,7 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("🎓 EduPath AI: Machine Learning Сурагчийн Зөвлөх Платформ")
-st.caption(
-    "Girls & Boys CODE 2026 - Data Science, Python & Machine Learning Capstone"
-    " Project"
-)
+st.title("🎓 EduPath AI: Сурагчийн Зөвлөх Платформ")
 
 @st.cache_data
 def load_data_and_train_ml():
@@ -85,7 +81,7 @@ if "checklist" not in st.session_state:
 tab1, tab2, tab3, tab4 = st.tabs([
     "📊 1. Стресс Үнэлгээ",
     "🎯 2. Зорилго ба Төлөвлөгөө",
-    "🤖 3. ML Мэргэжил Таамаглагч & Сургууль Хайгч",
+    "🤖 3. Мэргэжил Таамаглагч & Сургууль Хайгч",
     "💬 4. AI Чатбот",
 ])
 
@@ -117,8 +113,8 @@ with tab2:
   goal = st.selectbox(
       "Үндсэн зорилгоо сонгоно уу:",
       [
-          "Python & ML Capstone төсөл дуусгах",
-          "IELTS / SAT оноогоо ахиулах",
+          "SAT оноогоо ахиулах",
+          "IELTS оноогоо ахиулах",
           "ЭЕШ болон Их сургуулийн бэлтгэл хийх",
       ],
   )
@@ -140,12 +136,8 @@ with tab2:
       completed += 1
   st.progress(completed / len(st.session_state.checklist))
 with tab3:
-  st.header("🤖 Machine Learning (ML) Санал Болгох Систем")
-  st.markdown(
-      "Girls Code 2026 хөтөлбөрт үзсэн **ML Classification (Random Forest)**"
-      " алгоритм ашиглан танд тохирох салбарыг таамаглана."
-  )
-
+  st.header(" Санал Болгох Систем")
+  
   if ml_model is not None and not df_survey.empty:
     cols_s = df_survey.columns
     st.subheader("📝 Сурагчийн профайл оруулах:")
@@ -249,7 +241,7 @@ with tab4:
         )
       elif "эеш" in msg_lower or "сургууль" in msg_lower:
         st.write(
-            "**EduPath AI:** '3. ML Мэргэжил Таамаглагч' таб руу орж сургуулийн"
+            "**EduPath AI:** '3.  Мэргэжил Таамаглагч' таб руу орж сургуулийн"
             " босго оноогоо хараарай[cite: 3, 4]."
         )
       else:
